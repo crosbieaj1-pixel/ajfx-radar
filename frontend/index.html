@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AJFX Trading Radar</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg: #0a0e17;
+            --card: #111827;
+            --card-hover: #1a2234;
+            --border: #1e293b;
+            --text: #f9fafb;
+            --text-dim: #6b7280;
+            --text-muted: #4b5563;
+            --green: #10b981;
+            --green-dim: #064e3b;
+            --red: #ef4444;
+            --red-dim: #7f1d1d;
+            --blue: #3b82f6;
+            --amber: #f59e0b;
+            --amber-dim: #78350f;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 16px;
+            line-height: 1.5;
+        }
+
+        .container { max-width: 900px; margin: 0 auto; }
+
+        /* Header */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 20px;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            margin-bottom: 16px;
+        }
+        .header-left { display: flex; align-items: center; gap: 12px; }
+        .logo { font-size: 20px; font-weight: 700; color: var(--text); }
+        .logo span { color: var(--green); }
+        .header-right { display: flex; align-items: center; gap: 12px; font-size: 13px; color: var(--text-dim); }
+        .header-right .dot { color: var(--green); }
+        .status { display: flex; align-items: center; gap: 6px; }
+        select, button {
+            background: var(--bg);
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 6px 12px;
+            font-size: 13px;
+            font-family: inherit;
+            cursor: pointer;
+        }
+        select:focus, button:focus { outline: 2px solid var(--blue); }
+        button.refresh-btn { background: var(--green-dim); border-color: var(--green); color: var(--green); }
+        button.refresh-btn:hover { background: var(--green); color: #fff; }
+
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-dim);
+        }
+        .spinner {
+            width: 40px; height: 40px;
+            border: 3px solid var(--border);
+            border-top-color: var(--blue);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 16px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Error */
+        .error-box {
+            background: var(--red-dim);
+            border: 1px solid var(--red);
+            border-radius: 12px;
+            padding: 24px;
+            text-align: center;
+            color: var(--red);
+            margin-bottom: 16px;
+        }
+
+        /* Top Pick Card */
+        .top-pick {
+            background: linear-gradient(135deg, #064e3b 0%, #0f172a 100%);
+            border: 1px solid var(--green);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 16px;
+        }
+        .top-pick-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        .top-pick-badge {
+            background: var(--green);
+            color: #fff;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+        }
+        .top-pick-direction {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .top-pick-direction.long { background: var(--green-dim); color: var(--green); }
+        .top-pick-direction.short { background: var(--red-dim); color: var(--red); }
+        .top-pick-direction.neutral { background: var(--amber-dim); color: var(--amber); }
+        .top-pick-score { font-size: 42px; font-weight: 700; color: var(--green); line-height: 1; }
+        .top-pick-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 8px;
+            margin-top: 12px;
+            font-size: 13px;
+            color: var(--text-dim);
+        }
+        .top-pick-details strong { color: var(--text); }
+        .top-pick-catalysts {
+            margin-top: 12px;
+            font-size: 13px;
+            color: var(--text-dim);
+        }
+        .catalyst-tag {
+            display: inline-block;
+            background: var(--amber-dim);
+            color: var(--amber);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            margin-right: 6px;
+            margin-top: 4px;
+        }
+
+        /* Rankings */
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 16px;
+        }
+        .card-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .rankings-list { display: flex; flex-direction: column; gap: 8px; }
+        .ranking-row {
+            display: grid;
+            grid-template-columns: 30px 50px 70px 50px 1fr 60px;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            background: var(--bg);
+            border-radius: 8px;
+            cursor: pointer;
+            border: 1px solid transparent;
+            transition: all 0.15s;
+        }
+        .ranking-row:hover { background: var(--card-hover); border-color: var(--border); }
+        .ranking-row.selected { border-color: var(--blue); background: rgba(59,130,246,0.08); }
+        .rank-num { font-size: 12px; color: var(--text-muted); text-align: center; }
+        .rank-medal { font-size: 16px; }
+        .symbol { font-weight: 600; font-size: 14px; }
+        .direction-badge {
+            font-size: 11px;
+            font-weight: 600;
+            padding: 2px 6px;
+            border-radius: 4px;
+            text-align: center;
+        }
+        .direction-badge.long { background: var(--green-dim); color: var(--green); }
+        .direction-badge.short { background: var(--red-dim); color: var(--red); }
+        .direction-badge.neutral { background: var(--amber-dim); color: var(--amber); }
+        .score-bar-wrap { display: flex; align-items: center; gap: 8px; }
+        .score-bar-bg {
+            flex: 1;
+            height: 8px;
+            background: var(--border);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .score-bar-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.6s ease;
+        }
+        .score-bar-fill.high { background: var(--green); }
+        .score-bar-fill.mid { background: var(--amber); }
+        .score-bar-fill.low { background: var(--red); }
+        .score-val { font-size: 13px; font-weight: 600; min-width: 36px; }
+
+        /* Deep Dive */
+        .deep-dive { margin-top: 16px; }
+        .deep-dive-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+        .asset-price { font-size: 28px; font-weight: 700; }
+        .asset-change { font-size: 14px; margin-left: 8px; }
+        .asset-change.pos { color: var(--green); }
+        .asset-change.neg { color: var(--red); }
+        .deep-dive-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        .metric-box {
+            background: var(--bg);
+            border-radius: 8px;
+            padding: 12px;
+        }
+        .metric-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
+        .metric-value { font-size: 16px; font-weight: 600; }
+        .metric-sub { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
+        .ai-brief {
+            background: var(--bg);
+            border-left: 3px solid var(--blue);
+            border-radius: 0 8px 8px 0;
+            padding: 16px;
+            font-size: 14px;
+            line-height: 1.6;
+            color: var(--text-dim);
+            margin-bottom: 16px;
+        }
+        .catalysts-list { display: flex; flex-direction: column; gap: 6px; }
+        .catalyst-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 13px;
+            padding: 8px 12px;
+            background: var(--bg);
+            border-radius: 6px;
+        }
+        .catalyst-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+        .catalyst-dot.high { background: var(--red); }
+        .catalyst-dot.medium { background: var(--amber); }
+        .catalyst-time { color: var(--text-muted); font-size: 12px; min-width: 50px; }
+        .catalyst-event { color: var(--text-dim); }
+        .catalyst-impact { font-size: 11px; font-weight: 600; padding: 2px 6px; border-radius: 4px; margin-left: auto; }
+        .catalyst-impact.high { background: var(--red-dim); color: var(--red); }
+        .catalyst-impact.medium { background: var(--amber-dim); color: var(--amber); }
+
+        /* News */
+        .news-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border);
+        }
+        .news-item:last-child { border-bottom: none; }
+        .news-sentiment { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px; flex-shrink: 0; }
+        .news-sentiment.bullish { background: var(--green-dim); color: var(--green); }
+        .news-sentiment.bearish { background: var(--red-dim); color: var(--red); }
+        .news-sentiment.neutral { background: var(--border); color: var(--text-dim); }
+        .news-content { flex: 1; }
+        .news-title { font-size: 13px; line-height: 1.4; margin-bottom: 4px; }
+        .news-meta { font-size: 11px; color: var(--text-muted); }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 24px;
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        /* Collapsible */
+        .collapse { display: none; }
+        .collapse.open { display: block; }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .ranking-row { grid-template-columns: 24px 50px 60px 1fr 40px; font-size: 13px; }
+            .top-pick-score { font-size: 32px; }
+            .header { flex-direction: column; gap: 12px; text-align: center; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <!-- Header -->
+    <div class="header">
+        <div class="header-left">
+            <div class="logo">🛡️ AJFX <span>Radar</span></div>
+        </div>
+        <div class="header-right">
+            <div class="status"><span class="dot">●</span> <span id="last-update">Awaiting data...</span></div>
+            <select id="refresh-select">
+                <option value="0">Manual</option>
+                <option value="60000">1 min</option>
+                <option value="300000" selected>5 min</option>
+                <option value="900000">15 min</option>
+            </select>
+            <button class="refresh-btn" onclick="fetchData()">↻ Refresh</button>
+        </div>
+    </div>
+
+    <!-- Loading -->
+    <div id="loading" class="loading" style="display:none">
+        <div class="spinner"></div>
+        Fetching market data...
+    </div>
+
+    <!-- Error -->
+    <div id="error-box" class="error-box" style="display:none"></div>
+
+    <!-- Top Pick -->
+    <div id="top-pick" class="top-pick" style="display:none"></div>
+
+    <!-- Rankings -->
+    <div id="rankings-card" class="card" style="display:none">
+        <div class="card-title">📊 Full Rankings</div>
+        <div id="rankings" class="rankings-list"></div>
+    </div>
+
+    <!-- Deep Dive -->
+    <div id="deep-dive" class="card collapse"></div>
+
+    <!-- Economic Calendar -->
+    <div id="calendar-card" class="card" style="display:none">
+        <div class="card-title">📋 Today's Catalysts</div>
+        <div id="calendar" class="catalysts-list"></div>
+    </div>
+
+    <!-- News -->
+    <div id="news-card" class="card" style="display:none">
+        <div class="card-title">📰 Market Headlines</div>
+        <div id="news" class="news-list"></div>
+    </div>
+
+    <div class="footer">
+        AJFX Trading Radar · Built by AJ & Bertie 🦔<br>
+        <span style="color:var(--text-muted)">No financial advice. Educational purposes only.</span>
+    </div>
+</div>
+
+<script>
+const API = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    ? 'http://localhost:8011'
+    : window.location.origin;
+
+let refreshInterval = 300000;
+let selectedSymbol = null;
+let cachedData = null;
+let refreshTimer = null;
+
+document.getElementById('refresh-select').addEventListener('change', (e) => {
+    refreshInterval = parseInt(e.target.value);
+    if (refreshTimer) clearInterval(refreshTimer);
+    if (refreshInterval > 0) {
+        refreshTimer = setInterval(fetchData, refreshInterval);
+    }
+});
+
+async function fetchData() {
+    const loading = document.getElementById('loading');
+    const errorBox = document.getElementById('error-box');
+    loading.style.display = 'block';
+    errorBox.style.display = 'none';
+
+    try {
+        const res = await fetch(`${API}/api/scan`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        cachedData = await res.json();
+        renderDashboard(cachedData);
+        document.getElementById('last-update').textContent = 'Updated: ' + new Date().toLocaleTimeString();
+    } catch (e) {
+        errorBox.textContent = '⚠️ Could not fetch data. Is the backend running? Error: ' + e.message;
+        errorBox.style.display = 'block';
+        document.getElementById('top-pick').style.display = 'none';
+        document.getElementById('rankings-card').style.display = 'none';
+        document.getElementById('calendar-card').style.display = 'none';
+        document.getElementById('news-card').style.display = 'none';
+    } finally {
+        loading.style.display = 'none';
+    }
+}
+
+function renderDashboard(data) {
+    if (!data || !data.assets || data.assets.length === 0) return;
+
+    const assets = data.assets;
+    const top = assets[0];
+
+    // Top Pick
+    renderTopPick(top);
+
+    // Rankings
+    renderRankings(assets);
+
+    // Calendar
+    if (data.economic_events && data.economic_events.length > 0) {
+        renderCalendar(data.economic_events);
+        document.getElementById('calendar-card').style.display = 'block';
+    }
+
+    // News
+    if (data.news_headlines && data.news_headlines.length > 0) {
+        renderNews(data.news_headlines);
+        document.getElementById('news-card').style.display = 'block';
+    }
+
+    // Select top pick by default
+    if (!selectedSymbol) selectAsset(top.symbol);
+}
+
+function renderTopPick(asset) {
+    const el = document.getElementById('top-pick');
+    const changeClass = asset.daily_change_pct >= 0 ? 'pos' : 'neg';
+    const changeSign = asset.daily_change_pct >= 0 ? '+' : '';
+
+    let catalystsHtml = '';
+    if (asset.catalysts && asset.catalysts.length > 0) {
+        catalystsHtml = '<div class="top-pick-catalysts"><strong>Catalysts:</strong> ' +
+            asset.catalysts.map(c => `<span class="catalyst-tag">${c}</span>`).join('') + '</div>';
+    }
+
+    el.innerHTML = `
+        <div class="top-pick-header">
+            <span class="top-pick-badge">🎯 TOP PICK</span>
+            <span class="top-pick-direction ${asset.direction.toLowerCase()}">${asset.direction}</span>
+            <span style="margin-left:auto; font-size:13px; color:var(--text-dim)">${asset.name}</span>
+        </div>
+        <div class="top-pick-score">${asset.composite_score}<span style="font-size:20px;color:var(--text-dim)">/100</span></div>
+        <div class="top-pick-details">
+            <div><strong>$${asset.price}</strong> <span class="${changeClass}">${changeSign}${asset.daily_change_pct}%</span></div>
+            <div><strong>ATR Zone:</strong> ${atrZone(asset.distance_to_nearest_atr)}</div>
+            <div><strong>Nearest Level:</strong> $${asset.nearest_level}</div>
+            <div><strong>HTF Bias:</strong> ${asset.htf_bias?.toUpperCase() || 'NEUTRAL'}</div>
+        </div>
+        ${catalystsHtml}
+    `;
+    el.style.display = 'block';
+}
+
+function renderRankings(assets) {
+    const el = document.getElementById('rankings');
+    el.innerHTML = assets.map((a, i) => {
+        const barClass = a.composite_score >= 70 ? 'high' : a.composite_score >= 50 ? 'mid' : 'low';
+        const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `<span class="rank-num">${i+1}</span>`;
+        return `
+            <div class="ranking-row ${selectedSymbol === a.symbol ? 'selected' : ''}" onclick="selectAsset('${a.symbol}')">
+                ${medal}
+                <span class="symbol">${a.symbol}</span>
+                <span class="direction-badge ${a.direction.toLowerCase()}">${a.direction}</span>
+                <span class="score-bar-wrap">
+                    <div class="score-bar-bg">
+                        <div class="score-bar-fill ${barClass}" style="width:${a.composite_score}%"></div>
+                    </div>
+                </span>
+                <span class="score-val" style="color:var(--${barClass === 'high' ? 'green' : barClass === 'mid' ? 'amber' : 'red'})">${a.composite_score}</span>
+            </div>
+        `;
+    }).join('');
+    document.getElementById('rankings-card').style.display = 'block';
+}
+
+function selectAsset(symbol) {
+    selectedSymbol = symbol;
+    const asset = cachedData.assets.find(a => a.symbol === symbol);
+    if (!asset) return;
+
+    // Update rankings selection
+    document.querySelectorAll('.ranking-row').forEach(row => {
+        row.classList.toggle('selected', row.onclick.toString().includes(symbol));
+    });
+
+    renderDeepDive(asset);
+}
+
+function renderDeepDive(asset) {
+    const el = document.getElementById('deep-dive');
+    const changeClass = asset.daily_change_pct >= 0 ? 'pos' : 'neg';
+    const changeSign = asset.daily_change_pct >= 0 ? '+' : '';
+
+    const h4 = asset.h4_levels || {};
+    const h1 = asset.h4_levels || {};
+
+    el.innerHTML = `
+        <div class="deep-dive">
+            <div class="deep-dive-header">
+                <div>
+                    <span class="symbol" style="font-size:20px">${asset.symbol}</span>
+                    <span style="color:var(--text-dim);margin-left:8px">${asset.name}</span>
+                </div>
+                <div>
+                    <span class="asset-price">$${asset.price}</span>
+                    <span class="asset-change ${changeClass}">${changeSign}${asset.daily_change_pct}%</span>
+                </div>
+            </div>
+
+            <div class="deep-dive-grid">
+                <div class="metric-box">
+                    <div class="metric-label">ATR (14)</div>
+                    <div class="metric-value">$${asset.atr}</div>
+                    <div class="metric-sub">ATR Distance: ${asset.distance_to_nearest_atr}x</div>
+                </div>
+                <div class="metric-box">
+                    <div class="metric-label">Zone</div>
+                    <div class="metric-value" style="font-size:14px">${asset.zone_classification || 'Mid-range'}</div>
+                </div>
+                <div class="metric-box">
+                    <div class="metric-label">H4 Bias</div>
+                    <div class="metric-value" style="color:var(--${h4.bias === 'bullish' ? 'green' : h4.bias === 'bearish' ? 'red' : 'amber'})">${(asset.htf_bias || 'NEUTRAL').toUpperCase()}</div>
+                </div>
+                <div class="metric-box">
+                    <div class="metric-label">Direction</div>
+                    <div class="metric-value" style="color:var(--${asset.direction === 'LONG' ? 'green' : asset.direction === 'SHORT' ? 'red' : 'amber'})">${asset.direction}</div>
+                </div>
+                <div class="metric-box">
+                    <div class="metric-label">H4 High</div>
+                    <div class="metric-value">$${h4.high || asset.nearest_level || '—'}</div>
+                </div>
+                <div class="metric-box">
+                    <div class="metric-label">H4 Low</div>
+                    <div class="metric-value">$${h4.low || '—'}</div>
+                </div>
+            </div>
+
+            ${asset.summary ? `
+            <div class="ai-brief">
+                <div class="metric-label" style="margin-bottom:8px">📝 AI Brief</div>
+                ${asset.summary}
+            </div>
+            ` : ''}
+
+            ${asset.catalysts && asset.catalysts.length > 0 ? `
+            <div class="card-title" style="margin-top:16px">🔴 Key Catalysts</div>
+            <div class="catalysts-list">
+                ${asset.catalysts.map(c => `
+                    <div class="catalyst-item">
+                        <span class="catalyst-dot high"></span>
+                        <span class="catalyst-event">${c}</span>
+                    </div>
+                `).join('')}
+            </div>
+            ` : ''}
+        </div>
+    `;
+    el.classList.add('open');
+}
+
+function renderCalendar(events) {
+    const el = document.getElementById('calendar');
+    el.innerHTML = events.map(e => `
+        <div class="catalyst-item">
+            <span class="catalyst-dot ${e.impact}"></span>
+            <span class="catalyst-time">${e.time}</span>
+            <span class="catalyst-event">${e.currency} — ${e.event}</span>
+            <span class="catalyst-impact ${e.impact}">${e.impact.toUpperCase()}</span>
+        </div>
+    `).join('');
+}
+
+function renderNews(headlines) {
+    const el = document.getElementById('news');
+    el.innerHTML = headlines.slice(0, 8).map(n => `
+        <div class="news-item">
+            <span class="news-sentiment ${n.sentiment}">${n.sentiment.toUpperCase()}</span>
+            <div class="news-content">
+                <div class="news-title">${n.title}</div>
+                <div class="news-meta">${n.source || 'Market News'} · ${n.time || ''}</div>
+            </div>
+        </div>
+    `).join('');
+}
+
+function atrZone(dist) {
+    if (dist <= 0.3) return 'VERY CLOSE (' + dist + 'x ATR)';
+    if (dist <= 0.6) return 'Close (' + dist + 'x ATR)';
+    if (dist <= 1.0) return 'Mid-range (' + dist + 'x ATR)';
+    return 'Far (' + dist + 'x ATR)';
+}
+
+// Start
+fetchData();
+if (refreshInterval > 0) {
+    refreshTimer = setInterval(fetchData, refreshInterval);
+}
+</script>
+</body>
+</html>
