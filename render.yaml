@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: ajfx-radar-backend
+    env: docker
+    plan: free
+    dockerfilePath: ./backend/Dockerfile
+    autoDeploy: true
+    envVars:
+      - key: PORT
+        value: 8011
